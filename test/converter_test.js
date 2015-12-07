@@ -63,6 +63,21 @@ describe('converting to a jsonapi document', function(){
         assert.equal(model.relationships.parentClass.data.id, klass.extends);
       });
     });
+
+    it('attaches classItems to the attributes object', function() {
+      let classes = findClasses(this.model);
+
+      let items = _.chain(document.classitems)
+                    .values()
+                    .groupBy('class')
+                    .value();
+
+      classes.forEach(klass => {
+        let classItems = klass.attributes.classItems;
+
+        assert.deepEqual(classItems, items[klass.id] || []);
+      });
+    });
   });
 
 });
