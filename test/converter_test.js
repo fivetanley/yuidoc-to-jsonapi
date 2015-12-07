@@ -1,9 +1,9 @@
 'use strict';
 
-var convert = require('../lib/converter');
-var document = require('./fixtures/ember-data-docs');
-var assert = require('chai').assert;
-var _ = require('lodash');
+let convert = require('../lib/converter');
+let document = require('./fixtures/ember-data-docs');
+let assert = require('chai').assert;
+let _ = require('lodash');
 
 let findClasses = (document) => document.data.filter(doc => doc.type === 'class');
 
@@ -78,7 +78,26 @@ describe('converting to a jsonapi document', function(){
         assert.deepEqual(classItems, items[klass.id] || []);
       });
     });
+
+    it('attaches the module as a relationship', function() {
+      let classes = findClasses(this.model);
+
+      _.values(document.classes).forEach(docClass => {
+        let klass = _.find(classes, c => c.id === docClass.name);
+
+        if (docClass.module) {
+          assert.deepEqual(klass.relationships.module.data, {
+            id: docClass.module,
+            type: 'module'
+          });
+        }
+      });
+    });
+
   });
 
+  describe('modules', function() {
+
+  });
 });
 
