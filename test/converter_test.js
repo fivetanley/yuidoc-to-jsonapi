@@ -63,6 +63,7 @@ describe('converting to a jsonapi document', function(){
         let model = _.find(classes, (c) => c.id === klass.name);
         assert.ok(model);
         assert.equal(model.relationships.parentClass.data.id, klass.extends);
+        assert.equal(model.relationships.parentClass.data.type, 'class')
       });
     });
 
@@ -85,6 +86,7 @@ describe('converting to a jsonapi document', function(){
         }
 
         assert.deepEqual(_.map(classItems, 'id'), relationshipIDs(klass));
+        classItems.forEach(item => assert.equal(item.type, 'method'));
       });
     });
 
