@@ -1,5 +1,6 @@
 {
   "name": "yuidoc-to-jsonapi",
+  "version": "0.1.0",
   "license": "MIT",
   "dependencies": {
     "chai": "^3.4.1",
