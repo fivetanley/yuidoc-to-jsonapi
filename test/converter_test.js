@@ -6,6 +6,7 @@ let assert = require('chai').assert;
 let _ = require('lodash');
 
 let findClasses = (document) => document.data.filter(doc => doc.type === 'class');
+let findModules = (document) => document.data.filter(doc => doc.type === 'module');
 
 describe('converting to a jsonapi document', function(){
 
@@ -64,19 +65,49 @@ describe('converting to a jsonapi document', function(){
       });
     });
 
-    it('attaches classItems to the attributes object', function() {
+    it('attaches methods as a relationship', function() {
       let classes = findClasses(this.model);
 
       let items = _.chain(document.classitems)
                     .values()
+                    .filter('itemtype', 'method')
                     .groupBy('class')
                     .value();
 
       classes.forEach(klass => {
-        let classItems = klass.attributes.classItems;
+        let classItems = klass.relationships.methods.data;
 
-        assert.deepEqual(classItems, items[klass.id] || []);
+        function relationshipIDs(klass) {
+          return (items[klass.id] || []).map(function(item) {
+            return item.class + '#' + item.name;
+          });
+        }
+
+        assert.deepEqual(_.map(classItems, 'id'), relationshipIDs(klass));
       });
+    });
+
+    it('attaches events as a relationship', function() {
+      let classes = findClasses(this.model);
+
+      let items = _.chain(document.classitems)
+                    .values()
+                    .filter('itemtype', 'event')
+                    .groupBy('class')
+                    .value();
+
+      classes.forEach(klass => {
+        let classItems = klass.relationships.events.data;
+
+        function relationshipIDs(klass) {
+          return (items[klass.id] || []).map(function(item) {
+            return item.class + '#' + item.name;
+          });
+        }
+
+        assert.deepEqual(_.map(classItems, 'id'), relationshipIDs(klass));
+      });
+
     });
 
     it('attaches the module as a relationship', function() {
@@ -98,6 +129,34 @@ describe('converting to a jsonapi document', function(){
 
   describe('modules', function() {
 
+    beforeEach(function() {
+      this.modules = findModules(this.model);
+      this.yuiModules = _.values(document.modules);
+    });
+
+    it('extracts all the modules', function() {
+      this.yuiModules.forEach(module => {
+        let mod = _.find(this.modules, m => m.id === module.name);
+
+        assert.ok(mod);
+        assert.equal(mod.type, 'module');
+        assert.equal(mod.attributes.file, module.file);
+        assert.equal(mod.attributes.line, module.line);
+        assert.equal(mod.attributes.tag, module.tag);
+        assert.equal(mod.attributes.description, module.description);
+        assert.equal(mod.attributes.itemtype, module.itemtype);
+      });
+    });
+
+    it('adds the classes as relationships', function() {
+      this.yuiModules.forEach(module => {
+        let mod = _.find(this.modules, m => m.id === module.name);
+        let classes = Object.keys(module.classes);
+        let relationshipLink = _.map(mod.relationships.classes.data, 'id');
+
+        assert.deepEqual(relationshipLink, classes);
+      });
+    });
   });
 });
 

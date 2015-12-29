@@ -3,15 +3,15 @@
   "version": "0.1.0",
   "license": "MIT",
   "dependencies": {
-    "chai": "^3.4.1",
-    "lodash": "^3.10.1",
     "lodash.assign": "^3.2.0",
     "lodash.get": "^3.7.0",
     "lodash.pick": "^3.1.0",
     "lodash.values": "^3.0.0"
   },
   "devDependencies": {
-    "mocha": "^2.3.4"
+    "chai": "^3.4.1",
+    "mocha": "^2.3.4",
+    "lodash": "^3.10.1"
   },
   "scripts": {
     "test": "mocha test"
