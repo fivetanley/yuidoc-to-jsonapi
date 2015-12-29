@@ -199,6 +199,83 @@ describe('converting to a jsonapi document', function(){
       });
     });
 
+    describe('properties', function() {
+      beforeEach(function() {
+        this.properties = findType(this.model, 'property');
+        this.yuiProperties = document.classitems.filter(item => item.itemtype === 'property');
+
+        this.properties = _.sortBy(this.properties, ['attributes.file', 'line']);
+        this.yuiProperties = _.sortBy(this.yuiProperties, ['file', 'line']);
+      });
+
+      it('extracts all the properties', function() {
+        assert.equal(this.properties.length, this.yuiProperties.length);
+      });
+
+      it('extracts all the attributes', function() {
+        this.yuiProperties.forEach(yuiProperty => {
+          let property = _.find(this.properties, y => y.id === yuiProperty.class + '#' + yuiProperty.name && yuiProperty.line === y.attributes.line);
+
+          assert.ok(property);
+
+          assert.equal(property.attributes.file, yuiProperty.file);
+          assert.equal(property.attributes.line, yuiProperty.line);
+          assert.equal(property.attributes.description, yuiProperty.description);
+          assert.equal(property.attributes.name, yuiProperty.name);
+          assert.equal(property.attributes.params, yuiProperty.params);
+          assert.equal(property.attributes.return, yuiProperty.return);
+        });
+      });
+
+      it('adds class as a relationship', function() {
+        _.filter(this.yuiProperties, 'class').forEach(yuiProperty => {
+          let property = _.find(this.properties, y => y.id === yuiProperty.class + '#' + yuiProperty.name && yuiProperty.line === y.attributes.line);
+
+          assert.ok(property);
+          assert.equal(property.relationships.class.data.id, yuiProperty.class);
+        });
+      });
+    });
+
+    describe('events', function() {
+      beforeEach(function() {
+        this.events = findType(this.model, 'event');
+        this.yuiEvents = document.classitems.filter(item => item.itemtype === 'event');
+
+        this.events = _.sortBy(this.events, ['attributes.file', 'line']);
+        this.yuiEvents = _.sortBy(this.yuiEvents, ['file', 'line']);
+      });
+
+      it('extracts all the events', function() {
+        assert.equal(this.events.length, this.yuiEvents.length);
+      });
+
+      it('extracts all the attributes', function() {
+        this.yuiEvents.forEach(yuiEvent => {
+          let event = _.find(this.events, y => y.id === yuiEvent.class + '#' + yuiEvent.name && yuiEvent.line === y.attributes.line);
+
+          assert.ok(event);
+
+          assert.equal(event.attributes.file, yuiEvent.file);
+          assert.equal(event.attributes.line, yuiEvent.line);
+          assert.equal(event.attributes.description, yuiEvent.description);
+          assert.equal(event.attributes.name, yuiEvent.name);
+          assert.equal(event.attributes.params, yuiEvent.params);
+          assert.equal(event.attributes.return, yuiEvent.return);
+        });
+      });
+
+      it('adds class as a relationship', function() {
+        _.filter(this.yuiEvents, 'class').forEach(yuiEvent => {
+          let event = _.find(this.events, y => y.id === yuiEvent.class + '#' + yuiEvent.name && yuiEvent.line === y.attributes.line);
+
+          assert.ok(event);
+          assert.equal(event.relationships.class.data.id, yuiEvent.class);
+        });
+      });
+
+    });
+
   });
 });
 
