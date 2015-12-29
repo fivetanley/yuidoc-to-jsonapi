@@ -5,8 +5,9 @@ let document = require('./fixtures/ember-data-docs');
 let assert = require('chai').assert;
 let _ = require('lodash');
 
-let findClasses = (document) => document.data.filter(doc => doc.type === 'class');
-let findModules = (document) => document.data.filter(doc => doc.type === 'module');
+function findType(document, type) {
+  return document.data.filter(doc => doc.type === type);
+}
 
 describe('converting to a jsonapi document', function(){
 
@@ -22,14 +23,14 @@ describe('converting to a jsonapi document', function(){
 
     it('extracts all the classes', function() {
       let classCount = Object.keys(document.classes).length;
-      let classes = findClasses(this.model);
+      let classes = findType(this.model, 'class');
 
       assert.equal(classCount, classes.length);
     });
 
     it('adds the attributes to the `attributes` field', function() {
       let CLASS_ATTRIBUTES = ['name', 'shortname', 'file', 'line', 'description'];
-      let classes = findClasses(this.model);
+      let classes = findType(this.model, 'class');
 
       classes.forEach(klass => {
         CLASS_ATTRIBUTES.forEach(attr => assert.property(klass.attributes, attr));
@@ -37,7 +38,7 @@ describe('converting to a jsonapi document', function(){
     });
 
     it('adds descendants to the relationships objects', function() {
-      let classes = findClasses(this.model);
+      let classes = findType(this.model, 'class');
 
       let parentClasses = _.uniq(_.values(document.classes)
                             .filter(klass => klass.extends && !/^Ember/.exec(klass.extends))
@@ -53,7 +54,7 @@ describe('converting to a jsonapi document', function(){
     });
 
     it('adds parentClass to the relationships object', function() {
-      let classes = findClasses(this.model);
+      let classes = findType(this.model, 'class');
 
       let childrenFromFixtures = _.values(document.classes)
                                  .filter(klass => klass.extends);
@@ -66,7 +67,7 @@ describe('converting to a jsonapi document', function(){
     });
 
     it('attaches methods as a relationship', function() {
-      let classes = findClasses(this.model);
+      let classes = findType(this.model, 'class');
 
       let items = _.chain(document.classitems)
                     .values()
@@ -88,7 +89,7 @@ describe('converting to a jsonapi document', function(){
     });
 
     it('attaches events as a relationship', function() {
-      let classes = findClasses(this.model);
+      let classes = findType(this.model, 'class');
 
       let items = _.chain(document.classitems)
                     .values()
@@ -111,7 +112,7 @@ describe('converting to a jsonapi document', function(){
     });
 
     it('attaches the module as a relationship', function() {
-      let classes = findClasses(this.model);
+      let classes = findType(this.model, 'class');
 
       _.values(document.classes).forEach(docClass => {
         let klass = _.find(classes, c => c.id === docClass.name);
@@ -130,7 +131,7 @@ describe('converting to a jsonapi document', function(){
   describe('modules', function() {
 
     beforeEach(function() {
-      this.modules = findModules(this.model);
+      this.modules = findType(this.model, 'module');
       this.yuiModules = _.values(document.modules);
     });
 
@@ -157,6 +158,45 @@ describe('converting to a jsonapi document', function(){
         assert.deepEqual(relationshipLink, classes);
       });
     });
+  });
+
+  describe('classItems', function() {
+
+    describe('methods', function() {
+      beforeEach(function() {
+        this.methods = findType(this.model, 'method');
+        this.yuiMethods = document.classitems.filter(item => item.itemtype === 'method');
+
+        this.methods = _.sortBy(this.methods, ['attributes.file', 'line']);
+        this.yuiKMethods = _.sortBy(this.yuiMethods, ['file', 'line']);
+      });
+
+      it('extracts all the methods', function() {
+        assert.equal(this.methods.length, this.yuiMethods.length);
+      });
+
+      it('extracts all the attributes', function() {
+        this.yuiMethods.forEach(yuiMethod => {
+          let method = _.find(this.methods, m => m.id === yuiMethod.class + '#' + yuiMethod.name && yuiMethod.line === m.attributes.line);
+
+          assert.equal(method.attributes.file, yuiMethod.file);
+          assert.equal(method.attributes.line, yuiMethod.line);
+          assert.equal(method.attributes.description, yuiMethod.description);
+          assert.equal(method.attributes.name, yuiMethod.name);
+          assert.equal(method.attributes.params, yuiMethod.params);
+          assert.equal(method.attributes.return, yuiMethod.return);
+        });
+      });
+
+      it('adds class as a relationship', function() {
+        _.filter(this.yuiMethods, 'class').forEach(yuiMethod => {
+          let method = _.find(this.methods, m => m.id === yuiMethod.class + '#' + yuiMethod.name && yuiMethod.line === m.attributes.line);
+
+          assert.equal(method.relationships.class.data.id, yuiMethod.class);
+        });
+      });
+    });
+
   });
 });
 
