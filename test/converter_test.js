@@ -233,6 +233,7 @@ describe('converting to a jsonapi document', function(){
 
           assert.ok(property);
           assert.equal(property.relationships.class.data.id, yuiProperty.class);
+          assert.equal(property.relationships.class.data.type, 'class');
         });
       });
     });
@@ -271,6 +272,7 @@ describe('converting to a jsonapi document', function(){
 
           assert.ok(event);
           assert.equal(event.relationships.class.data.id, yuiEvent.class);
+          assert.equal(event.relationships.class.data.type, 'class');
         });
       });
 
