@@ -187,6 +187,7 @@ describe('converting to a jsonapi document', function(){
           assert.equal(method.attributes.name, yuiMethod.name);
           assert.equal(method.attributes.params, yuiMethod.params);
           assert.equal(method.attributes.return, yuiMethod.return);
+          assert.equal(method.attributes.access, yuiMethod.access);
         });
       });
 
@@ -195,6 +196,7 @@ describe('converting to a jsonapi document', function(){
           let method = _.find(this.methods, m => m.id === yuiMethod.class + '#' + yuiMethod.name && yuiMethod.line === m.attributes.line);
 
           assert.equal(method.relationships.class.data.id, yuiMethod.class);
+          assert.equal(method.relationships.class.data.type, 'class');
         });
       });
     });
@@ -224,6 +226,7 @@ describe('converting to a jsonapi document', function(){
           assert.equal(property.attributes.name, yuiProperty.name);
           assert.equal(property.attributes.params, yuiProperty.params);
           assert.equal(property.attributes.return, yuiProperty.return);
+          assert.equal(property.attributes.access, yuiProperty.access);
         });
       });
 
