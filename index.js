@@ -1,1 +1,1 @@
-module.exports = require('./dist/converter');
+module.exports = require('./dist/converter')
