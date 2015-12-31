@@ -33,7 +33,8 @@ describe('converting to a jsonapi document', function(){
       let classes = findType(this.model, 'class');
 
       classes.forEach(klass => {
-        CLASS_ATTRIBUTES.forEach(attr => assert.property(klass.attributes, attr));
+        let yuiDocClass = _.find(document.classes, k => klass.id === k.name);
+        CLASS_ATTRIBUTES.forEach(attr => assert.equal(klass.attributes[attr], yuiDocClass[attr], 'blah should equal this property' + attr));
       });
     });
 
@@ -67,50 +68,91 @@ describe('converting to a jsonapi document', function(){
       });
     });
 
-    it('attaches methods as a relationship', function() {
+    it('adds methods as to attributes', function() {
       let classes = findType(this.model, 'class');
 
       let items = _.chain(document.classitems)
                     .values()
                     .filter('itemtype', 'method')
+                    .filter('class')
                     .groupBy('class')
                     .value();
 
       classes.forEach(klass => {
-        let classItems = klass.relationships.methods.data;
+        let documentClassItems = klass.attributes.methods;
+        let classItems = items[klass.id] || [];
 
-        function relationshipIDs(klass) {
-          return (items[klass.id] || []).map(function(item) {
-            return item.class + '#' + item.name;
-          });
-        }
+        assert.equal(documentClassItems.length, classItems.length);
 
-        assert.deepEqual(_.map(classItems, 'id'), relationshipIDs(klass));
-        classItems.forEach(item => assert.equal(item.type, 'method'));
+        classItems.forEach(yuiMethod => {
+          let method = _.find(klass.attributes.methods, m => m.name  === yuiMethod.name && yuiMethod.line === m.line);
+          assert.deepEqual(method.file, yuiMethod.file);
+          assert.deepEqual(method.line, yuiMethod.line);
+          assert.deepEqual(method.description, yuiMethod.description);
+          assert.deepEqual(method.name, yuiMethod.name);
+          assert.deepEqual(method.params, yuiMethod.params);
+          assert.deepEqual(method.return, yuiMethod.return);
+          assert.deepEqual(method.access, yuiMethod.access);
+        });
+      });
+
+      it('adds properties on the attributes object', function() {
+      let classes = findType(this.model, 'class');
+
+      let items = _.chain(document.classitems)
+                    .values()
+                    .filter('itemtype', 'property')
+                    .filter('class')
+                    .groupBy('class')
+                    .value();
+
+      classes.forEach(klass => {
+        let yuiProperties = items[klass.id] || [];
+
+        yuiProperties.forEach(yuiProperty => {
+          let property = _.find(klass.attributes.properties, y => y.id === yuiProperty.name && yuiProperty.line === y.attributes.line);
+
+          assert.ok(property);
+
+          assert.equal(property.attributes.file, yuiProperty.file);
+          assert.equal(property.attributes.line, yuiProperty.line);
+          assert.equal(property.attributes.description, yuiProperty.description);
+          assert.equal(property.attributes.name, yuiProperty.name);
+          assert.equal(property.attributes.params, yuiProperty.params);
+          assert.equal(property.attributes.return, yuiProperty.return);
+          assert.equal(property.attributes.access, yuiProperty.access);
+        });
       });
     });
 
-    it('attaches events as a relationship', function() {
+    it('adds events to attributes', function() {
       let classes = findType(this.model, 'class');
 
       let items = _.chain(document.classitems)
                     .values()
                     .filter('itemtype', 'event')
+                    .filter('class')
                     .groupBy('class')
                     .value();
 
       classes.forEach(klass => {
-        let classItems = klass.relationships.events.data;
+        let classItems = klass.attributes.events;
 
-        function relationshipIDs(klass) {
-          return (items[klass.id] || []).map(function(item) {
-            return item.class + '#' + item.name;
-          });
-        }
+        let yuiEvents = items[klass.id] || [];
 
-        assert.deepEqual(_.map(classItems, 'id'), relationshipIDs(klass));
+        yuiEvents.forEach(yuiEvent => {
+          let event = _.find(classItems, y => y.name === yuiEvent.name && yuiEvent.line === y.line);
+
+          assert.ok(event);
+
+          assert.deepEqual(event.file, yuiEvent.file);
+          assert.deepEqual(event.line, yuiEvent.line);
+          assert.deepEqual(event.description, yuiEvent.description);
+          assert.deepEqual(event.name, yuiEvent.name);
+          assert.deepEqual(event.params, yuiEvent.params);
+          assert.deepEqual(event.return, yuiEvent.return);
+        });
       });
-
     });
 
     it('attaches the module as a relationship', function() {
@@ -161,126 +203,6 @@ describe('converting to a jsonapi document', function(){
       });
     });
   });
-
-  describe('classItems', function() {
-
-    describe('methods', function() {
-      beforeEach(function() {
-        this.methods = findType(this.model, 'method');
-        this.yuiMethods = document.classitems.filter(item => item.itemtype === 'method');
-
-        this.methods = _.sortBy(this.methods, ['attributes.file', 'line']);
-        this.yuiKMethods = _.sortBy(this.yuiMethods, ['file', 'line']);
-      });
-
-      it('extracts all the methods', function() {
-        assert.equal(this.methods.length, this.yuiMethods.length);
-      });
-
-      it('extracts all the attributes', function() {
-        this.yuiMethods.forEach(yuiMethod => {
-          let method = _.find(this.methods, m => m.id === yuiMethod.class + '#' + yuiMethod.name && yuiMethod.line === m.attributes.line);
-
-          assert.equal(method.attributes.file, yuiMethod.file);
-          assert.equal(method.attributes.line, yuiMethod.line);
-          assert.equal(method.attributes.description, yuiMethod.description);
-          assert.equal(method.attributes.name, yuiMethod.name);
-          assert.equal(method.attributes.params, yuiMethod.params);
-          assert.equal(method.attributes.return, yuiMethod.return);
-          assert.equal(method.attributes.access, yuiMethod.access);
-        });
-      });
-
-      it('adds class as a relationship', function() {
-        _.filter(this.yuiMethods, 'class').forEach(yuiMethod => {
-          let method = _.find(this.methods, m => m.id === yuiMethod.class + '#' + yuiMethod.name && yuiMethod.line === m.attributes.line);
-
-          assert.equal(method.relationships.class.data.id, yuiMethod.class);
-          assert.equal(method.relationships.class.data.type, 'class');
-        });
-      });
-    });
-
-    describe('properties', function() {
-      beforeEach(function() {
-        this.properties = findType(this.model, 'property');
-        this.yuiProperties = document.classitems.filter(item => item.itemtype === 'property');
-
-        this.properties = _.sortBy(this.properties, ['attributes.file', 'line']);
-        this.yuiProperties = _.sortBy(this.yuiProperties, ['file', 'line']);
-      });
-
-      it('extracts all the properties', function() {
-        assert.equal(this.properties.length, this.yuiProperties.length);
-      });
-
-      it('extracts all the attributes', function() {
-        this.yuiProperties.forEach(yuiProperty => {
-          let property = _.find(this.properties, y => y.id === yuiProperty.class + '#' + yuiProperty.name && yuiProperty.line === y.attributes.line);
-
-          assert.ok(property);
-
-          assert.equal(property.attributes.file, yuiProperty.file);
-          assert.equal(property.attributes.line, yuiProperty.line);
-          assert.equal(property.attributes.description, yuiProperty.description);
-          assert.equal(property.attributes.name, yuiProperty.name);
-          assert.equal(property.attributes.params, yuiProperty.params);
-          assert.equal(property.attributes.return, yuiProperty.return);
-          assert.equal(property.attributes.access, yuiProperty.access);
-        });
-      });
-
-      it('adds class as a relationship', function() {
-        _.filter(this.yuiProperties, 'class').forEach(yuiProperty => {
-          let property = _.find(this.properties, y => y.id === yuiProperty.class + '#' + yuiProperty.name && yuiProperty.line === y.attributes.line);
-
-          assert.ok(property);
-          assert.equal(property.relationships.class.data.id, yuiProperty.class);
-          assert.equal(property.relationships.class.data.type, 'class');
-        });
-      });
-    });
-
-    describe('events', function() {
-      beforeEach(function() {
-        this.events = findType(this.model, 'event');
-        this.yuiEvents = document.classitems.filter(item => item.itemtype === 'event');
-
-        this.events = _.sortBy(this.events, ['attributes.file', 'line']);
-        this.yuiEvents = _.sortBy(this.yuiEvents, ['file', 'line']);
-      });
-
-      it('extracts all the events', function() {
-        assert.equal(this.events.length, this.yuiEvents.length);
-      });
-
-      it('extracts all the attributes', function() {
-        this.yuiEvents.forEach(yuiEvent => {
-          let event = _.find(this.events, y => y.id === yuiEvent.class + '#' + yuiEvent.name && yuiEvent.line === y.attributes.line);
-
-          assert.ok(event);
-
-          assert.equal(event.attributes.file, yuiEvent.file);
-          assert.equal(event.attributes.line, yuiEvent.line);
-          assert.equal(event.attributes.description, yuiEvent.description);
-          assert.equal(event.attributes.name, yuiEvent.name);
-          assert.equal(event.attributes.params, yuiEvent.params);
-          assert.equal(event.attributes.return, yuiEvent.return);
-        });
-      });
-
-      it('adds class as a relationship', function() {
-        _.filter(this.yuiEvents, 'class').forEach(yuiEvent => {
-          let event = _.find(this.events, y => y.id === yuiEvent.class + '#' + yuiEvent.name && yuiEvent.line === y.attributes.line);
-
-          assert.ok(event);
-          assert.equal(event.relationships.class.data.id, yuiEvent.class);
-          assert.equal(event.relationships.class.data.type, 'class');
-        });
-      });
-
-    });
-
   });
 });
 
